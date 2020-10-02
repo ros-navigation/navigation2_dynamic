@@ -9,3 +9,4 @@ kf_hungarian_node:
     # obstacle filter
     vel_filter: 0.1 # only keep obstacles with velocities greater than this value
     cost_filter: 1.0 # filter Hungarian assignment with cost greater than threshold
+    
