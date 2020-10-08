@@ -105,76 +105,74 @@ class KFHungarianTracker(Node):
         self.birth(det_ind, num_of_detect, detections)
         dead_object_list = self.death(obs_ind, num_of_obstacle)
 
-        # check if there is subscribers
-        if self.tracker_obstacle_pub.get_subscription_count() == 0 and self.tracker_marker_pub.get_subscription_count() == 0:
-            return
-
         # construct ObstacleArray
-        obstacle_array = ObstacleArray()
-        obstacle_array.header = msg.header
-        track_list = []
-        for obs in self.obstacle_list:
-            # do not publish obstacles with low speed
-            obs_vel = np.linalg.norm(np.array([obs.msg.velocity.x, obs.msg.velocity.y, obs.msg.velocity.z]))
-            if obs_vel > self.vel_filter:
-                track_list.append(obs.msg)
-        obstacle_array.obstacles = track_list
-        self.tracker_obstacle_pub.publish(obstacle_array)
+        if self.tracker_obstacle_pub.get_subscription_count() > 0:
+            obstacle_array = ObstacleArray()
+            obstacle_array.header = msg.header
+            track_list = []
+            for obs in self.obstacle_list:
+                # do not publish obstacles with low speed
+                obs_vel = np.linalg.norm(np.array([obs.msg.velocity.x, obs.msg.velocity.y, obs.msg.velocity.z]))
+                if obs_vel > self.vel_filter:
+                    track_list.append(obs.msg)
+            obstacle_array.obstacles = track_list
+            self.tracker_obstacle_pub.publish(obstacle_array)
 
         # rviz visualization
-        marker_array = MarkerArray()
-        marker_list = []
-        # add current active obstacles
-        for obs in self.obstacle_list:
-            (r, g, b) = colorsys.hsv_to_rgb(obs.msg.id * 30. / 360., 1., 1.) # encode id with rgb color
-            # make a cube 
-            marker = Marker()
-            marker.header = msg.header
-            marker.id = obs.msg.id
-            marker.type = 1 # CUBE
-            marker.action = 0
-            marker.color.a = 0.5
-            marker.color.r = r
-            marker.color.g = g
-            marker.color.b = b
-            marker.pose.position = obs.msg.position
-            angle = np.arctan2(obs.msg.velocity.y, obs.msg.velocity.x)
-            marker.pose.orientation.z = np.float(np.sin(angle / 2))
-            marker.pose.orientation.w = np.float(np.cos(angle / 2))
-            marker.scale = obs.msg.size
-            marker_list.append(marker)
-            # make an arrow
-            arrow = Marker()
-            arrow.header = msg.header
-            arrow.id = 255 - obs.msg.id
-            arrow.type = 0
-            arrow.action = 0
-            arrow.color.a = 1.0
-            arrow.color.r = r
-            arrow.color.g = g
-            arrow.color.b = b
-            arrow.pose.position = obs.msg.position
-            arrow.pose.orientation.z = np.float(np.sin(angle / 2))
-            arrow.pose.orientation.w = np.float(np.cos(angle / 2))
-            arrow.scale.x = np.linalg.norm([obs.msg.velocity.x, obs.msg.velocity.y, obs.msg.velocity.z])
-            arrow.scale.y = 0.05
-            arrow.scale.z = 0.05
-            marker_list.append(arrow)
-        # add dead obstacles to delete in rviz
-        for idx in dead_object_list:
-            marker = Marker()
-            marker.header = msg.header
-            marker.id = idx
-            marker.action = 2 # delete
-            arrow = Marker()
-            arrow.header = msg.header
-            arrow.id = 255 - idx
-            arrow.action = 2
-            marker_list.append(marker)
-            marker_list.append(arrow)
+        if self.tracker_marker_pub.get_subscription_count() > 0:
+            marker_array = MarkerArray()
+            marker_list = []
+            # add current active obstacles
+            for obs in self.obstacle_list:
+                (r, g, b) = colorsys.hsv_to_rgb(obs.msg.id * 30. % 360 / 360., 1., 1.) # encode id with rgb color
+                # make a cube 
+                marker = Marker()
+                marker.header = msg.header
+                marker.id = obs.msg.id
+                marker.type = 1 # CUBE
+                marker.action = 0
+                marker.color.a = 0.5
+                marker.color.r = r
+                marker.color.g = g
+                marker.color.b = b
+                marker.pose.position = obs.msg.position
+                angle = np.arctan2(obs.msg.velocity.y, obs.msg.velocity.x)
+                marker.pose.orientation.z = np.float(np.sin(angle / 2))
+                marker.pose.orientation.w = np.float(np.cos(angle / 2))
+                marker.scale = obs.msg.size
+                marker_list.append(marker)
+                # make an arrow
+                arrow = Marker()
+                arrow.header = msg.header
+                arrow.id = 255 - obs.msg.id
+                arrow.type = 0
+                arrow.action = 0
+                arrow.color.a = 1.0
+                arrow.color.r = r
+                arrow.color.g = g
+                arrow.color.b = b
+                arrow.pose.position = obs.msg.position
+                arrow.pose.orientation.z = np.float(np.sin(angle / 2))
+                arrow.pose.orientation.w = np.float(np.cos(angle / 2))
+                arrow.scale.x = np.linalg.norm([obs.msg.velocity.x, obs.msg.velocity.y, obs.msg.velocity.z])
+                arrow.scale.y = 0.05
+                arrow.scale.z = 0.05
+                marker_list.append(arrow)
+            # add dead obstacles to delete in rviz
+            for idx in dead_object_list:
+                marker = Marker()
+                marker.header = msg.header
+                marker.id = idx
+                marker.action = 2 # delete
+                arrow = Marker()
+                arrow.header = msg.header
+                arrow.id = 255 - idx
+                arrow.action = 2
+                marker_list.append(marker)
+                marker_list.append(arrow)
 
-        marker_array.markers = marker_list
-        self.tracker_marker_pub.publish(marker_array)
+            marker_array.markers = marker_list
+            self.tracker_marker_pub.publish(marker_array)
 
     def birth(self, det_ind, num_of_detect, detections):
         '''generate new ObstacleClass for detections that do not match any in current obstacle list'''
