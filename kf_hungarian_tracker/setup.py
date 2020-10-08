@@ -5,7 +5,7 @@ package_name = 'kf_hungarian_tracker'
 
 setup(
     name=package_name,
-    version='0.0.0',
+    version='0.0.1',
     packages=[package_name],
     data_files=[
         ('share/ament_index/resource_index/packages',
@@ -16,10 +16,10 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='tony',
-    maintainer_email='csj15thu@gmail.com',
-    description='TODO: Package description',
-    license='TODO: License declaration',
+    maintainer='Shengjian Chen, Steven Macenski',
+    maintainer_email='csj15thu@gmail.com, stevenmacenski@gmail.com',
+    description='Use Kalman Filter and Hungarian algorithm to track multiple objects',
+    license='Apache-2.0',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [

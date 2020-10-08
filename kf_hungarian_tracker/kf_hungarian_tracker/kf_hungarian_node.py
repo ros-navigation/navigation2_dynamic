@@ -55,7 +55,7 @@ class KFHungarianTracker(Node):
         # subscribe to detector 
         self.detection_sub = self.create_subscription(
             ObstacleArray,
-            "detection",
+            'detection',
             self.callback,
             10)
 
@@ -105,7 +105,7 @@ class KFHungarianTracker(Node):
         self.birth(det_ind, num_of_detect, detections)
         dead_object_list = self.death(obs_ind, num_of_obstacle)
 
-        # check if there is subscirbers
+        # check if there is subscribers
         if self.tracker_obstacle_pub.get_subscription_count() == 0 and self.tracker_marker_pub.get_subscription_count() == 0:
             return
 
