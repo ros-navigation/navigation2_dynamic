@@ -7,6 +7,7 @@ kf_hungarian_node:
     errorCovPost: [1., 1., 1., 10., 10., 10.] # if use top-down view, set the 3rd and 6th to 0
     a_noise: [2., 2., 0.5] # acceration noise, if use top-down view, the 3rd number should be 0
     # obstacle filter
-    vel_filter: 0.1 # only keep obstacles with velocities greater than this value
+    vel_filter: [0.1, 2.0] # minimum and maximum velocity to filter obstacles
+    height_filter: [-2.0, 2.0] # minimum and maximum height (z) to filter obstacles
     cost_filter: 1.0 # filter Hungarian assignment with cost greater than threshold
     

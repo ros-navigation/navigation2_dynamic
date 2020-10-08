@@ -36,7 +36,8 @@ class KFHungarianTracker(Node):
                 ('death_threshold', 3),
                 ('measurementNoiseCov', [1., 1., 1.]),
                 ('errorCovPost', [1., 1., 1., 10., 10., 10.]),
-                ('vel_filter', 0.2),
+                ('vel_filter', [0.1, 2.0]),
+                ('height_filter', [-2.0, 2.0]),
                 ('cost_filter', 1.0)
             ])
         self.death_threshold = self.get_parameter("death_threshold")._value
@@ -44,6 +45,7 @@ class KFHungarianTracker(Node):
         self.errorCovPost = self.get_parameter("errorCovPost")._value
         self.a_noise = self.get_parameter("a_noise")._value
         self.vel_filter = self.get_parameter("vel_filter")._value
+        self.height_filter = self.get_parameter("height_filter")._value
         self.top_down = self.get_parameter("top_down")._value
         self.cost_filter = self.get_parameter("cost_filter")._value
 
@@ -105,16 +107,22 @@ class KFHungarianTracker(Node):
         self.birth(det_ind, num_of_detect, detections)
         dead_object_list = self.death(obs_ind, num_of_obstacle)
 
+        # apply velocity and height filter
+        filtered_obstacle_list = []
+        for obs in self.obstacle_list:
+            obs_vel = np.linalg.norm(np.array([obs.msg.velocity.x, obs.msg.velocity.y, obs.msg.velocity.z]))
+            obs_height = obs.msg.position.z
+            if obs_vel > self.vel_filter[0] and obs_vel < self.vel_filter[1] and obs_height > self.height_filter[0] and obs_height < self.height_filter[1]:
+                filtered_obstacle_list.append(obs)
+
         # construct ObstacleArray
         if self.tracker_obstacle_pub.get_subscription_count() > 0:
             obstacle_array = ObstacleArray()
             obstacle_array.header = msg.header
             track_list = []
-            for obs in self.obstacle_list:
+            for obs in filtered_obstacle_list:
                 # do not publish obstacles with low speed
-                obs_vel = np.linalg.norm(np.array([obs.msg.velocity.x, obs.msg.velocity.y, obs.msg.velocity.z]))
-                if obs_vel > self.vel_filter:
-                    track_list.append(obs.msg)
+                track_list.append(obs.msg)
             obstacle_array.obstacles = track_list
             self.tracker_obstacle_pub.publish(obstacle_array)
 
@@ -123,7 +131,7 @@ class KFHungarianTracker(Node):
             marker_array = MarkerArray()
             marker_list = []
             # add current active obstacles
-            for obs in self.obstacle_list:
+            for obs in filtered_obstacle_list:
                 (r, g, b) = colorsys.hsv_to_rgb(obs.msg.id * 30. % 360 / 360., 1., 1.) # encode id with rgb color
                 # make a cube 
                 marker = Marker()
