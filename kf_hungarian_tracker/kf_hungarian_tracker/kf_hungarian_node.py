@@ -9,6 +9,11 @@ from rclpy.node import Node
 import colorsys
 from kf_hungarian_tracker.obstacle_class import ObstacleClass
 
+from tf2_ros import LookupException
+from tf2_ros.buffer import Buffer
+from tf2_ros.transform_listener import TransformListener
+from scipy.spatial.transform import Rotation as R
+
 class KFHungarianTracker(Node):
     '''Use Kalman Fiter and Hungarian algorithm to track multiple dynamic obstacles
 
@@ -31,6 +36,7 @@ class KFHungarianTracker(Node):
         self.declare_parameters(
             namespace='',
             parameters=[
+                ('global_frame', "camera_link"),
                 ('a_noise', [2., 2., 0.5]),
                 ('top_down', False),
                 ('death_threshold', 3),
@@ -40,6 +46,7 @@ class KFHungarianTracker(Node):
                 ('height_filter', [-2.0, 2.0]),
                 ('cost_filter', 1.0)
             ])
+        self.global_frame = self.get_parameter("global_frame")._value
         self.death_threshold = self.get_parameter("death_threshold")._value
         self.measurementNoiseCov = self.get_parameter("measurementNoiseCov")._value
         self.errorCovPost = self.get_parameter("errorCovPost")._value
@@ -65,6 +72,10 @@ class KFHungarianTracker(Node):
         self.tracker_obstacle_pub = self.create_publisher(ObstacleArray, 'tracking', 10)
         self.tracker_marker_pub = self.create_publisher(MarkerArray, 'marker', 10)
 
+        # setup tf related
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer, self)
+
     def callback(self, msg):
         '''callback function for detection result'''
 
@@ -77,6 +88,29 @@ class KFHungarianTracker(Node):
         detections = msg.obstacles
         num_of_detect = len(detections)
         num_of_obstacle = len(self.obstacle_list)
+
+        # transform to global frame
+        if self.global_frame is not None:
+            try:
+                trans = self.tf_buffer.lookup_transform(self.global_frame, msg.header.frame_id, rclpy.time.Time())
+            except LookupException:
+                self.get_logger().info('fail to get tf from {} to {}'.format(msg.header.frame_id, self.global_frame))
+                return
+            else:
+                # TODO: use tf2_geometry_msgs when it can be imported to python in ros2
+                r = R.from_quat([trans.transform.rotation.x, trans.transform.rotation.y, trans.transform.rotation.z, trans.transform.rotation.w])
+                msg.header.frame_id = self.global_frame
+                for i in range(len(detections)):
+                    p = [detections[i].position.x, detections[i].position.y, detections[i].position.z]
+                    p = r.apply(p)
+                    detections[i].position.x = p[0] + trans.transform.translation.x 
+                    detections[i].position.y = p[1] + trans.transform.translation.y
+                    detections[i].position.z = p[2] + trans.transform.translation.z
+                    s = [detections[i].size.x, detections[i].size.y, detections[i].size.z]
+                    s = r.apply(s)
+                    detections[i].size.x = s[0]
+                    detections[i].size.y = s[1]
+                    detections[i].size.z = s[2]
 
         # kalman predict
         for obj in self.obstacle_list:
