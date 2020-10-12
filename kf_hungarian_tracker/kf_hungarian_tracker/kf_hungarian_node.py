@@ -89,6 +89,10 @@ class KFHungarianTracker(Node):
         num_of_detect = len(detections)
         num_of_obstacle = len(self.obstacle_list)
 
+        # kalman predict
+        for obj in self.obstacle_list:
+            obj.predict(dt)
+
         # transform to global frame
         if self.global_frame is not None:
             try:
@@ -111,10 +115,6 @@ class KFHungarianTracker(Node):
                     detections[i].size.x = s[0]
                     detections[i].size.y = s[1]
                     detections[i].size.z = s[2]
-
-        # kalman predict
-        for obj in self.obstacle_list:
-            obj.predict(dt)
 
         # hungarian matching
         cost = np.zeros((num_of_obstacle, num_of_detect))
