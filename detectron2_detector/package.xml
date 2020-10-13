@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>detectron2_detector</name>
-  <version>0.0.0</version>
+  <version>0.0.1</version>
   <description>This detector uses detectron2 to get object mask and then uses pointcloud2 data to estimate 3D position. </description>
   <maintainer email="stevenmacenski@gmail.com">Steven Macenski</maintainer>
   <maintainer email="csj15thu@gmail.com">Shengjian Chen</maintainer>

@@ -7,3 +7,4 @@ detectron2_node:
     min_mask: 20 # minimum mask to be considered as an obstacle candidate
     categories: [0] # please check out COCO dataset category_id list if you want to config this; if you want to track all, leave it empty
     nms_filter: 0.3 # 3D non-max suppression threshold, [0, 1]
+    
