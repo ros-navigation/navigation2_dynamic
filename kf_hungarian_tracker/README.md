@@ -19,9 +19,9 @@ Parameters can be set in `config/kf_hungarian.yaml`. For more information on par
 | global_frame     | transform from pointcloud frame to global frame,<br>None means message frame is global  | camera_link   |
 | death_threshold  | maximum missing frames before deleting an obstacle  | 3 |
 | top_down | whether project 3D points on ground plane, set to do top-down tracking | False |
-| measurementNoiseCov | measurement noise for Kalman filter [x,y,z] | [1., 1., 1.] |
-| errorCovPost | initial posteriori error estimate covariance matrix [x,y,z,vx,vy,vz] | [1., 1., 1., 10., 10., 10.] |
-| a_noise | model process noise covariance with estimated acceleration [ax,ay,az] | [2., 2., 0.5] |
+| measurement_noise_cov | measurement noise for Kalman filter [x,y,z] | [1., 1., 1.] |
+| error_cov_post | initial posteriori error estimate covariance matrix [x,y,z,vx,vy,vz] | [1., 1., 1., 10., 10., 10.] |
+| process_noise_cov | model process noise covariance with estimated acceleration [ax,ay,az] | [2., 2., 0.5] |
 | vel_filter | minimum and maximum velocity to filter obstacles [min,max] | [0.1, 2.0] |
 | height_filter | minimum and maximum height (z) to filter obstacles [min,max] | [-2.0, 2.0] | 
 | cost_filter | filter Hungarian assignment with cost greater than threshold | 1.0 |
