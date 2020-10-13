@@ -12,16 +12,16 @@ More cost functions like IoU of bounding boxes could be used.
 
 ### Parameters
 
-Parameters can be set in `config/kf_hungarian.yaml`.
+Parameters can be set in `config/kf_hungarian.yaml`. For more information on parameters for Kalman filter, check out [KalmanFilter](https://docs.opencv.org/master/dd/d6a/classcv_1_1KalmanFilter.html) from OpenCV. 
 
 | parameters       | Meaning        | Default |
 | ---------------- | ------------- | ------- |
-| global_frame     | transform from pointcloud frame to global frame,<br>None means current frame is global  | camera_link   |
+| global_frame     | transform from pointcloud frame to global frame,<br>None means message frame is global  | camera_link   |
 | death_threshold  | maximum missing frames before deleting an obstacle  | 3 |
-| top_down | whether project 3D points on ground plane | False |
-| measurementNoiseCov | measurement noise for Kalman filter | [1., 1., 1.] |
-| errorCovPost | initial posteriori error estimate covariance matrix | [1., 1., 1., 10., 10., 10.] |
-| a_noise | model process noise covariance with estimated acceleration | [2., 2., 0.5] |
-| vel_filter | minimum and maximum velocity to filter obstacles | [0.1, 2.0] |
-| height_filter | minimum and maximum height (z) to filter obstacles | [-2.0, 2.0] | 
+| top_down | whether project 3D points on ground plane, set to do top-down tracking | False |
+| measurementNoiseCov | measurement noise for Kalman filter [x,y,z] | [1., 1., 1.] |
+| errorCovPost | initial posteriori error estimate covariance matrix [x,y,z,vx,vy,vz] | [1., 1., 1., 10., 10., 10.] |
+| a_noise | model process noise covariance with estimated acceleration [ax,ay,az] | [2., 2., 0.5] |
+| vel_filter | minimum and maximum velocity to filter obstacles [min,max] | [0.1, 2.0] |
+| height_filter | minimum and maximum height (z) to filter obstacles [min,max] | [-2.0, 2.0] | 
 | cost_filter | filter Hungarian assignment with cost greater than threshold | 1.0 |
