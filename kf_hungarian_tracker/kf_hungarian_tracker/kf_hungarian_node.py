@@ -12,7 +12,8 @@ from kf_hungarian_tracker.obstacle_class import ObstacleClass
 from tf2_ros import LookupException
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
-from scipy.spatial.transform import Rotation as R
+from tf2_geometry_msgs import do_transform_point, do_transform_vector3
+from geometry_msgs.msg import PointStamped, Vector3Stamped
 
 class KFHungarianTracker(Node):
     '''Use Kalman Fiter and Hungarian algorithm to track multiple dynamic obstacles
@@ -89,32 +90,31 @@ class KFHungarianTracker(Node):
         num_of_detect = len(detections)
         num_of_obstacle = len(self.obstacle_list)
 
+        # kalman predict
+        for obj in self.obstacle_list:
+            obj.predict(dt)
+
         # transform to global frame
         if self.global_frame is not None:
             try:
                 trans = self.tf_buffer.lookup_transform(self.global_frame, msg.header.frame_id, rclpy.time.Time())
+                for i in range(len(detections)):
+                    # transform position (point)
+                    p = PointStamped()
+                    p.point = detections[i].position
+                    detections[i].position = do_transform_point(p, trans).point
+                    # transform velocity (vector3)
+                    v = Vector3Stamped()
+                    v.vector = detections[i].velocity
+                    detections[i].velocity = do_transform_vector3(v, trans).vector
+                    # transform size (vector3)
+                    s = Vector3Stamped()
+                    s.vector = detections[i].size
+                    detections[i].size = do_transform_vector3(s, trans).vector
+
             except LookupException:
                 self.get_logger().info('fail to get tf from {} to {}'.format(msg.header.frame_id, self.global_frame))
                 return
-            else:
-                # TODO: use tf2_geometry_msgs when it can be imported to python in ros2
-                r = R.from_quat([trans.transform.rotation.x, trans.transform.rotation.y, trans.transform.rotation.z, trans.transform.rotation.w])
-                msg.header.frame_id = self.global_frame
-                for i in range(len(detections)):
-                    p = [detections[i].position.x, detections[i].position.y, detections[i].position.z]
-                    p = r.apply(p)
-                    detections[i].position.x = p[0] + trans.transform.translation.x 
-                    detections[i].position.y = p[1] + trans.transform.translation.y
-                    detections[i].position.z = p[2] + trans.transform.translation.z
-                    s = [detections[i].size.x, detections[i].size.y, detections[i].size.z]
-                    s = r.apply(s)
-                    detections[i].size.x = s[0]
-                    detections[i].size.y = s[1]
-                    detections[i].size.z = s[2]
-
-        # kalman predict
-        for obj in self.obstacle_list:
-            obj.predict(dt)
 
         # hungarian matching
         cost = np.zeros((num_of_obstacle, num_of_detect))
