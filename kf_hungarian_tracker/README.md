@@ -24,5 +24,5 @@ Parameters can be set in `config/kf_hungarian.yaml`. For more information on par
 | process_noise_cov | model process noise covariance with estimated [acceleration](https://github.com/tony23545/navigation2_dynamic/blob/master/kf_hungarian_tracker/kf_hungarian_tracker/obstacle_class.py#L59) [ax,ay,az] | [2., 2., 0.5] |
 | vel_filter | minimum and maximum velocity to filter obstacles [min,max] (m/s) | [0.1, 2.0] |
 | height_filter | minimum and maximum height (z) to filter obstacles [min,max] (m) | [-2.0, 2.0] | 
-| cost_filter | filter Hungarian assignment with cost greater than threshold | 1.0 |
+| cost_filter | filter Hungarian assignments with cost greater than threshold (unit is `m` for Euclidean cost function) | 1.0 |
 * The default units are `m` and `m/s`, could be changed according to the detection.
