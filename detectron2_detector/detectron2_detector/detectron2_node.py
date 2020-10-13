@@ -29,21 +29,17 @@ class Detectron2Detector(Node):
         self.declare_parameters(
             namespace='',
             parameters=[
-                ('global_frame', "camera_link"),
                 ('detectron_config_file', "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml"),
                 ('detectron_score_thresh', 0.8),
                 ('pointcloud2_topic', "/realsense/camera/pointcloud"),
                 ('pc_downsample_factor', 16),
                 ('min_mask', 20),
                 ('categories', [0]),
-                ('z_filter', [-2., 2.]),
                 ('nms_filter', 0.3)
             ])
-        self.global_frame = self.get_parameter("global_frame")._value
         self.pc_downsample_factor = int(self.get_parameter("pc_downsample_factor")._value)
         self.min_mask = self.get_parameter("min_mask")._value
         self.categories = self.get_parameter("categories")._value
-        self.z_filter = self.get_parameter("z_filter")._value
         self.nms_filter = self.get_parameter("nms_filter")._value
 
         # setup detectron model

@@ -13,7 +13,7 @@ class ObstacleClass:
         dying: count missing frames for this obstacle, if reach threshold, delete this obstacle
     """
 
-    def __init__(self, obstacle_msg, idx, top_down, measurementNoiseCov, errorCovPost, a_noise):
+    def __init__(self, obstacle_msg, idx, top_down, measurement_noise_cov, error_cov_post, process_noise_cov):
         '''Initialize with an Obstacle msg and an assigned id'''
         self.msg = obstacle_msg
         self.msg.id = idx
@@ -22,21 +22,21 @@ class ObstacleClass:
 
         # check aganist state space dimension, top_down or not
         if top_down:
-            measurementNoiseCov[2] = 0.
-            errorCovPost[2] = 0.
-            errorCovPost[5] = 0.
-            a_noise[2] = 0.
+            measurement_noise_cov[2] = 0.
+            error_cov_post[2] = 0.
+            error_cov_post[5] = 0.
+            process_noise_cov[2] = 0.
 
         # setup kalman filter
         self.kalman = cv2.KalmanFilter(6,3) # 3d by default, 6d state space and 3d observation space
         self.kalman.measurementMatrix = np.array([[1,0,0,0,0,0], [0,1,0,0,0,0], [0,0,1,0,0,0]], np.float32)
-        self.kalman.measurementNoiseCov = np.diag(measurementNoiseCov).astype(np.float32)
+        self.kalman.measurementNoiseCov = np.diag(measurement_noise_cov).astype(np.float32)
         self.kalman.statePost = np.concatenate([position, velocity]).astype(np.float32)
-        self.kalman.errorCovPost = np.diag(errorCovPost).astype(np.float32)
+        self.kalman.errorCovPost = np.diag(error_cov_post).astype(np.float32)
         
         self.dying = 0
         self.top_down = top_down
-        self.a_noise = a_noise
+        self.process_noise_cov = process_noise_cov
 
     def predict(self, dt):
         '''update F and Q matrices, call KalmanFilter.predict and store position and velocity'''
@@ -67,12 +67,12 @@ class ObstacleClass:
         dt2 = dt**2
         dt3 = dt*dt2
         dt4 = dt2**2
-        Q = np.array([[dt4*self.a_noise[0]/4, 0, 0, dt3*self.a_noise[0]/2, 0, 0], 
-                      [0, dt4*self.a_noise[1]/4, 0, 0, dt3*self.a_noise[1]/2, 0],
-                      [0, 0, dt4*self.a_noise[2]/4, 0, 0, dt3*self.a_noise[2]/2],
-                      [dt3*self.a_noise[0]/2, 0, 0, dt2*self.a_noise[0], 0, 0],
-                      [0, dt3*self.a_noise[1]/2, 0, 0, dt2*self.a_noise[1], 0],
-                      [0, 0, dt3*self.a_noise[2]/2, 0, 0, dt2*self.a_noise[2]]]).astype(np.float32)
+        Q = np.array([[dt4*self.process_noise_cov[0]/4, 0, 0, dt3*self.process_noise_cov[0]/2, 0, 0], 
+                      [0, dt4*self.process_noise_cov[1]/4, 0, 0, dt3*self.process_noise_cov[1]/2, 0],
+                      [0, 0, dt4*self.process_noise_cov[2]/4, 0, 0, dt3*self.process_noise_cov[2]/2],
+                      [dt3*self.process_noise_cov[0]/2, 0, 0, dt2*self.process_noise_cov[0], 0, 0],
+                      [0, dt3*self.process_noise_cov[1]/2, 0, 0, dt2*self.process_noise_cov[1], 0],
+                      [0, 0, dt3*self.process_noise_cov[2]/2, 0, 0, dt2*self.process_noise_cov[2]]]).astype(np.float32)
 
         self.kalman.transitionMatrix = F
         self.kalman.processNoiseCov = Q
