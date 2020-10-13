@@ -38,20 +38,20 @@ class KFHungarianTracker(Node):
             namespace='',
             parameters=[
                 ('global_frame', "camera_link"),
-                ('a_noise', [2., 2., 0.5]),
+                ('process_noise_cov', [2., 2., 0.5]),
                 ('top_down', False),
                 ('death_threshold', 3),
-                ('measurementNoiseCov', [1., 1., 1.]),
-                ('errorCovPost', [1., 1., 1., 10., 10., 10.]),
+                ('measurement_noise_cov', [1., 1., 1.]),
+                ('error_cov_post', [1., 1., 1., 10., 10., 10.]),
                 ('vel_filter', [0.1, 2.0]),
                 ('height_filter', [-2.0, 2.0]),
                 ('cost_filter', 1.0)
             ])
         self.global_frame = self.get_parameter("global_frame")._value
         self.death_threshold = self.get_parameter("death_threshold")._value
-        self.measurementNoiseCov = self.get_parameter("measurementNoiseCov")._value
-        self.errorCovPost = self.get_parameter("errorCovPost")._value
-        self.a_noise = self.get_parameter("a_noise")._value
+        self.measurement_noise_cov = self.get_parameter("measurement_noise_cov")._value
+        self.error_cov_post = self.get_parameter("error_cov_post")._value
+        self.process_noise_cov = self.get_parameter("process_noise_cov")._value
         self.vel_filter = self.get_parameter("vel_filter")._value
         self.height_filter = self.get_parameter("height_filter")._value
         self.top_down = self.get_parameter("top_down")._value
@@ -98,6 +98,7 @@ class KFHungarianTracker(Node):
         if self.global_frame is not None:
             try:
                 trans = self.tf_buffer.lookup_transform(self.global_frame, msg.header.frame_id, rclpy.time.Time())
+                msg.header.frame_id = self.global_frame
                 for i in range(len(detections)):
                     # transform position (point)
                     p = PointStamped()
@@ -220,7 +221,7 @@ class KFHungarianTracker(Node):
         '''generate new ObstacleClass for detections that do not match any in current obstacle list'''
         for det in range(num_of_detect):
             if det not in det_ind:
-                self.obstacle_list.append(ObstacleClass(detections[det], self.max_id, self.top_down, self.measurementNoiseCov, self.errorCovPost, self.a_noise))
+                self.obstacle_list.append(ObstacleClass(detections[det], self.max_id, self.top_down, self.measurement_noise_cov, self.error_cov_post, self.process_noise_cov))
                 self.max_id =  self.max_id  + 1
 
     def death(self, obj_ind, num_of_obstacle):
