@@ -22,6 +22,8 @@
   <exec_depend>rclpy</exec_depend>
   <exec_depend>cv2</exec_depend>
   <exec_depend>tf2_ros</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>tf2_geometry_msgs</exec_depend>
 
   <export>
     <build_type>ament_python</build_type>
