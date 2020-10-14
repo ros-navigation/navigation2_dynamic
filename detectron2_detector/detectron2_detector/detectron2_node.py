@@ -4,6 +4,7 @@ setup_logger()
 
 # import from common libraries
 import numpy as np 
+from scipy.stats import multivariate_normal
 import os, json, cv2, random
 
 # import some common detectron2 utilities
@@ -35,12 +36,14 @@ class Detectron2Detector(Node):
                 ('pc_downsample_factor', 16),
                 ('min_mask', 20),
                 ('categories', [0]),
-                ('nms_filter', 0.3)
+                ('nms_filter', 0.3),
+                ('outlier_filter', 0.5)
             ])
         self.pc_downsample_factor = int(self.get_parameter("pc_downsample_factor")._value)
         self.min_mask = self.get_parameter("min_mask")._value
         self.categories = self.get_parameter("categories")._value
         self.nms_filter = self.get_parameter("nms_filter")._value
+        self.outlier_filter = self.get_parameter("outlier_filter")._value
 
         # setup detectron model
         self.cfg = get_cfg()
@@ -63,15 +66,14 @@ class Detectron2Detector(Node):
 
         self.count = -1
 
-    def outlier_filter(self, x, z, idx):
+    def outlier_filter(self, x, y, z, idx):
         '''simple outlier filter, assume Gaussian distribution and drop points with low probability (too far away from center)'''
-        x_mean = np.mean(x)
-        x_var = np.var(x)
-        z_mean = np.mean(z)
-        z_var = np.var(z)
-        # probability under Gaussian distribution
-        gaussian_kernel = np.exp(-0.5 * (np.power(x-x_mean, 2) / x_var + np.power(z-z_mean, 2) / z_var)) / (2 * np.pi * np.sqrt(x_var * z_var))
-        return idx[gaussian_kernel > 0.5]
+        mean = [np.mean(x), np.mean(y), np.mean(z)]
+        cov = np.diag([np.var(x), np.var(y), np.var(z)])
+        rv = multivariate_normal(mean, cov)
+        points = np.dstack((x, y, z))
+        p = rv.pdf(points)
+        return idx[p > self.outlier_filter]
 
     def callback(self, msg):
         # check if there is subscirbers
@@ -127,7 +129,7 @@ class Detectron2Detector(Node):
             # if user does not specify any interested category, keep all; else select those interested objects
             if (len(self.categories) == 0) or (outputs["instances"].pred_classes[i] in self.categories):
                 idx = np.where(masks[i])[0]
-                idx = self.outlier_filter(x[idx], z[idx], idx)
+                idx = self.outlier_filter(x[idx], y[idx], z[idx], idx)
                 if idx.shape[0] < self.min_mask:
                     continue
                 obstacle_msg = Obstacle()
@@ -149,21 +151,23 @@ class Detectron2Detector(Node):
                 detections.append(obstacle_msg)
 
         # publish detection result 
-        obstacle_array.obstacles = detections
-        self.detect_obj_pub.publish(obstacle_array)
+        if self.detect_obj_pub.get_subscription_count() > 0:
+            obstacle_array.obstacles = detections
+            self.detect_obj_pub.publish(obstacle_array)
 
         # visualize detection with detectron API
-        v = Visualizer(img[:, :, ::-1], MetadataCatalog.get(self.cfg.DATASETS.TRAIN[0]), scale=1)
-        out = v.draw_instance_predictions(outputs["instances"].to("cpu"))
-        out_img = out.get_image()[:, :, ::-1]
-        out_img_msg = Image()
-        out_img_msg.header = msg.header
-        out_img_msg.height = height
-        out_img_msg.width = width
-        out_img_msg.encoding = 'rgb8'
-        out_img_msg.step = 3 * width
-        out_img_msg.data = out_img.flatten().tolist()
-        self.detect_img_pub.publish(out_img_msg)
+        if self.detect_img_pub.get_subscription_count() > 0:
+            v = Visualizer(img[:, :, ::-1], MetadataCatalog.get(self.cfg.DATASETS.TRAIN[0]), scale=1)
+            out = v.draw_instance_predictions(outputs["instances"].to("cpu"))
+            out_img = out.get_image()[:, :, ::-1]
+            out_img_msg = Image()
+            out_img_msg.header = msg.header
+            out_img_msg.height = height
+            out_img_msg.width = width
+            out_img_msg.encoding = 'rgb8'
+            out_img_msg.step = 3 * width
+            out_img_msg.data = out_img.flatten().tolist()
+            self.detect_img_pub.publish(out_img_msg)
         
 def main():
     rclpy.init(args = None)
