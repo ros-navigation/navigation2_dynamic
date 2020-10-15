@@ -5,7 +5,6 @@ setup_logger()
 # import from common libraries
 import numpy as np 
 from scipy.stats import multivariate_normal
-import os, json, cv2, random
 
 # import some common detectron2 utilities
 from detectron2 import model_zoo
