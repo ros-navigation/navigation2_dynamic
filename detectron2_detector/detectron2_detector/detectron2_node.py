@@ -36,13 +36,13 @@ class Detectron2Detector(Node):
                 ('min_mask', 20),
                 ('categories', [0]),
                 ('nms_filter', 0.3),
-                ('outlier_filter', 0.5)
+                ('outlier_thresh', 0.5)
             ])
         self.pc_downsample_factor = int(self.get_parameter("pc_downsample_factor")._value)
         self.min_mask = self.get_parameter("min_mask")._value
         self.categories = self.get_parameter("categories")._value
         self.nms_filter = self.get_parameter("nms_filter")._value
-        self.outlier_filter = self.get_parameter("outlier_filter")._value
+        self.outlier_thresh = self.get_parameter("outlier_thresh")._value
 
         # setup detectron model
         self.cfg = get_cfg()
@@ -72,7 +72,7 @@ class Detectron2Detector(Node):
         rv = multivariate_normal(mean, cov)
         points = np.dstack((x, y, z))
         p = rv.pdf(points)
-        return idx[p > self.outlier_filter]
+        return idx[p > self.outlier_thresh]
 
     def callback(self, msg):
         # check if there is subscirbers
@@ -91,7 +91,7 @@ class Detectron2Detector(Node):
         g = points[(rgb_offset+1)::point_step]
         b = points[(rgb_offset+2)::point_step]
         img = np.concatenate([r[:, None], g[:, None], b[:, None]], axis = -1)
-        img = img.reshape((height, width, 3))
+        self.img = img.reshape((height, width, 3))
 
         # decode point cloud data
         if msg.fields[0].datatype < 3:
@@ -107,11 +107,17 @@ class Detectron2Detector(Node):
         y = points[1::int(self.pc_downsample_factor * point_step / byte)]
         z = points[2::int(self.pc_downsample_factor * point_step / byte)]
 
-        # call detectron2 model
-        outputs = self.predictor(img)
+        self.points = [x, y, z]
+        self.header = msg.header
+
+        # call detect function
+        self.detect()
+
+    def process_points(self, outputs):
+        '''estimate 3D position and size with detectron output and pointcloud data'''
+        x, y, z = self.points
 
         # map mask to point cloud data
-        color = np.zeros_like(x, dtype = 'uint8')
         num_classes = outputs['instances'].pred_classes.shape[0]
         if num_classes == 0:
             self.detect_obj_pub.publish(ObstacleArray())
@@ -121,8 +127,6 @@ class Detectron2Detector(Node):
         scores = outputs["instances"].scores.cpu().numpy().astype(np.float)
 
         # estimate 3D position with simple averaging of obstacle's points
-        obstacle_array = ObstacleArray()
-        obstacle_array.header = msg.header
         detections = []
         for i in range(num_classes):
             # if user does not specify any interested category, keep all; else select those interested objects
@@ -149,22 +153,33 @@ class Detectron2Detector(Node):
                 obstacle_msg.size.z = np.float(z_max - z_min)
                 detections.append(obstacle_msg)
 
+        return detections
+
+    def detect(self):
+        # call detectron2 model
+        outputs = self.predictor(self.img)
+
+        # process pointcloud to get 3D position and size
+        detections = self.process_points(outputs)
+
         # publish detection result 
+        obstacle_array = ObstacleArray()
+        obstacle_array.header = self.header
         if self.detect_obj_pub.get_subscription_count() > 0:
             obstacle_array.obstacles = detections
             self.detect_obj_pub.publish(obstacle_array)
 
         # visualize detection with detectron API
         if self.detect_img_pub.get_subscription_count() > 0:
-            v = Visualizer(img[:, :, ::-1], MetadataCatalog.get(self.cfg.DATASETS.TRAIN[0]), scale=1)
+            v = Visualizer(self.img[:, :, ::-1], MetadataCatalog.get(self.cfg.DATASETS.TRAIN[0]), scale=1)
             out = v.draw_instance_predictions(outputs["instances"].to("cpu"))
             out_img = out.get_image()[:, :, ::-1]
             out_img_msg = Image()
-            out_img_msg.header = msg.header
-            out_img_msg.height = height
-            out_img_msg.width = width
+            out_img_msg.header = self.header
+            out_img_msg.height = out_img.shape[0]
+            out_img_msg.width = out_img.shape[1]
             out_img_msg.encoding = 'rgb8'
-            out_img_msg.step = 3 * width
+            out_img_msg.step = 3 * out_img.shape[1]
             out_img_msg.data = out_img.flatten().tolist()
             self.detect_img_pub.publish(out_img_msg)
         

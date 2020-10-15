@@ -9,5 +9,5 @@ detectron2_node:
     pc_downsample_factor: 16
     min_mask: 20 # minimum mask to be considered as an obstacle candidate
     nms_filter: 0.3 # 3D non-max suppression threshold, [0, 1]
-    outlier_filter: 0.5
+    outlier_thresh: 0.5
     
