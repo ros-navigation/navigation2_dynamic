@@ -31,7 +31,7 @@ class Detectron2Detector(Node):
             parameters=[
                 ('detectron_config_file', "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml"),
                 ('detectron_score_thresh', 0.8),
-                ('pointcloud2_topic', "/realsense/camera/pointcloud"),
+                ('pointcloud2_topic', "/camera/depth/points"),
                 ('pc_downsample_factor', 16),
                 ('min_mask', 20),
                 ('categories', [0]),

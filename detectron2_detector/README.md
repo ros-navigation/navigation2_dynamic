@@ -8,7 +8,7 @@ We assume ordered pointcloud aligned with pixels is available. We use Mask RCNN 
 | ---------------- | ------------- | ------- |
 | detectron_config_file | config file to load detectron model, <br> check out [model zoo](https://github.com/facebookresearch/detectron2/blob/master/MODEL_ZOO.md) for more information | COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml |
 | detectron_score_thresh | min score to be considered as an object | 0.8 |
-| pointcloud2_topic | ros topic for pointcloud data | /realsense/camera/pointcloud |
+| pointcloud2_topic | ros topic for pointcloud data | /camera/depth/points |
 | categories | list of interested object categories, <br> left empty `[]` to detect all categories | [0] (person) |
 | pc_downsample_factor | factor to downsample the aligned pointcloud | 16 |
 | min_mask | min number of pixels in a mask | 20 |
