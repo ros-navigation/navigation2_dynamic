@@ -1,5 +1,6 @@
 import numpy as np 
 import cv2
+import uuid 
 
 class ObstacleClass:
     """wrap a kalman filter and extra information for one single obstacle
@@ -13,10 +14,10 @@ class ObstacleClass:
         dying: count missing frames for this obstacle, if reach threshold, delete this obstacle
     """
 
-    def __init__(self, obstacle_msg, idx, top_down, measurement_noise_cov, error_cov_post, process_noise_cov):
+    def __init__(self, obstacle_msg, top_down, measurement_noise_cov, error_cov_post, process_noise_cov):
         '''Initialize with an Obstacle msg and an assigned id'''
         self.msg = obstacle_msg
-        self.msg.id = idx
+        self.msg.id = uuid.uuid1()
         position = np.array([[obstacle_msg.position.x, obstacle_msg.position.y, obstacle_msg.position.z]]).T # shape 3*1
         velocity = np.array([[obstacle_msg.velocity.x, obstacle_msg.velocity.y, obstacle_msg.velocity.z]]).T
 

@@ -23,7 +23,6 @@ class KFHungarianTracker(Node):
 
     Attributes:
         obstacle_list: a list of ObstacleClass that currently present in the scene
-        max_id: the maximum id assigned 
         sec, nanosec: timing from sensor msg
         detection_sub: subscrib detection result from detection node
         tracker_obstacle_pub: publish tracking obstacles with ObstacleArray
@@ -58,7 +57,6 @@ class KFHungarianTracker(Node):
         self.cost_filter = self.get_parameter("cost_filter")._value
 
         self.obstacle_list = []
-        self.max_id = 0
         self.sec = 0
         self.nanosec = 0
 
@@ -76,6 +74,9 @@ class KFHungarianTracker(Node):
         # setup tf related
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
+
+        self.rviz_marker_map = {} # {uuid: (rviz marker id, rviz arrow id)}
+        self.current_rviz_marker_id = 0
 
     def callback(self, msg):
         '''callback function for detection result'''
@@ -165,13 +166,14 @@ class KFHungarianTracker(Node):
         if self.tracker_marker_pub.get_subscription_count() > 0:
             marker_array = MarkerArray()
             marker_list = []
+            self.current_rviz_marker_id += 1 # TODO collision
             # add current active obstacles
             for obs in filtered_obstacle_list:
-                (r, g, b) = colorsys.hsv_to_rgb(obs.msg.id * 30. % 360 / 360., 1., 1.) # encode id with rgb color
+                (r, g, b) = colorsys.hsv_to_rgb(i * 30. % 360 / 360., 1., 1.) # encode id with rgb color
                 # make a cube 
                 marker = Marker()
                 marker.header = msg.header
-                marker.id = obs.msg.id
+                marker.id = self.current_rviz_marker_id
                 marker.type = 1 # CUBE
                 marker.action = 0
                 marker.color.a = 0.5
@@ -185,9 +187,10 @@ class KFHungarianTracker(Node):
                 marker.scale = obs.msg.size
                 marker_list.append(marker)
                 # make an arrow
+                arrow_id = 2**32 - self.current_rviz_marker_id # descending from 32 bit id
                 arrow = Marker()
                 arrow.header = msg.header
-                arrow.id = 255 - obs.msg.id
+                arrow.id = arrow_id 
                 arrow.type = 0
                 arrow.action = 0
                 arrow.color.a = 1.0
@@ -201,19 +204,21 @@ class KFHungarianTracker(Node):
                 arrow.scale.y = 0.05
                 arrow.scale.z = 0.05
                 marker_list.append(arrow)
+                # record obstacle marker ids
+                self.rviz_marker_map[obs.msg.id] = (self.current_rviz_marker_id, arrow_id)
             # add dead obstacles to delete in rviz
             for idx in dead_object_list:
+                (marker_id, arrow_id) = self.rviz_marker_map[idx]
                 marker = Marker()
                 marker.header = msg.header
-                marker.id = idx
+                marker.id = marker_id
                 marker.action = 2 # delete
                 arrow = Marker()
                 arrow.header = msg.header
-                arrow.id = 255 - idx
+                arrow.id = arrow_id
                 arrow.action = 2
                 marker_list.append(marker)
                 marker_list.append(arrow)
-
             marker_array.markers = marker_list
             self.tracker_marker_pub.publish(marker_array)
 
@@ -221,8 +226,8 @@ class KFHungarianTracker(Node):
         '''generate new ObstacleClass for detections that do not match any in current obstacle list'''
         for det in range(num_of_detect):
             if det not in det_ind:
-                self.obstacle_list.append(ObstacleClass(detections[det], self.max_id, self.top_down, self.measurement_noise_cov, self.error_cov_post, self.process_noise_cov))
-                self.max_id =  self.max_id  + 1
+                obstacle = ObstacleClass(detections[det], self.top_down, self.measurement_noise_cov, self.error_cov_post, self.process_noise_cov)
+                self.obstacle_list.append(obstacle)
 
     def death(self, obj_ind, num_of_obstacle):
         '''count obstacles' missing frames and delete when reach threshold'''
