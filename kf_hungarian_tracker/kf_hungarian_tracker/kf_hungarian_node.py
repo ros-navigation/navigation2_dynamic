@@ -75,9 +75,6 @@ class KFHungarianTracker(Node):
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
-        self.rviz_marker_map = {} # {uuid: (rviz marker id, rviz arrow id)}
-        self.current_rviz_marker_id = 0
-
     def callback(self, msg):
         '''callback function for detection result'''
 
@@ -166,14 +163,14 @@ class KFHungarianTracker(Node):
         if self.tracker_marker_pub.get_subscription_count() > 0:
             marker_array = MarkerArray()
             marker_list = []
-            self.current_rviz_marker_id += 1 # TODO collision
             # add current active obstacles
             for obs in filtered_obstacle_list:
-                (r, g, b) = colorsys.hsv_to_rgb(i * 30. % 360 / 360., 1., 1.) # encode id with rgb color
+                (r, g, b) = colorsys.hsv_to_rgb((obs.msg.id.int >> 64) * 30. % 360 / 360., 1., 1.) # encode id with rgb color
                 # make a cube 
                 marker = Marker()
                 marker.header = msg.header
-                marker.id = self.current_rviz_marker_id
+                marker.ns = str(obs.msg.id)
+                marker.id = 0
                 marker.type = 1 # CUBE
                 marker.action = 0
                 marker.color.a = 0.5
@@ -187,10 +184,10 @@ class KFHungarianTracker(Node):
                 marker.scale = obs.msg.size
                 marker_list.append(marker)
                 # make an arrow
-                arrow_id = 2**32 - self.current_rviz_marker_id # descending from 32 bit id
                 arrow = Marker()
                 arrow.header = msg.header
-                arrow.id = arrow_id 
+                arrow.ns = str(obs.msg.id)
+                arrow.id = 1 
                 arrow.type = 0
                 arrow.action = 0
                 arrow.color.a = 1.0
@@ -204,18 +201,17 @@ class KFHungarianTracker(Node):
                 arrow.scale.y = 0.05
                 arrow.scale.z = 0.05
                 marker_list.append(arrow)
-                # record obstacle marker ids
-                self.rviz_marker_map[obs.msg.id] = (self.current_rviz_marker_id, arrow_id)
             # add dead obstacles to delete in rviz
             for idx in dead_object_list:
-                (marker_id, arrow_id) = self.rviz_marker_map[idx]
                 marker = Marker()
                 marker.header = msg.header
-                marker.id = marker_id
+                marker.ns = str(idx)
+                marker.id = 0
                 marker.action = 2 # delete
                 arrow = Marker()
                 arrow.header = msg.header
-                arrow.id = arrow_id
+                arrow.ns = str(idx)
+                arrow.id = 1
                 arrow.action = 2
                 marker_list.append(marker)
                 marker_list.append(arrow)
