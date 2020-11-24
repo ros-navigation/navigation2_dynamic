@@ -165,7 +165,7 @@ class KFHungarianTracker(Node):
             marker_list = []
             # add current active obstacles
             for obs in filtered_obstacle_list:
-                (r, g, b) = colorsys.hsv_to_rgb((obs.msg.id.int >> 64) * 30. % 360 / 360., 1., 1.) # encode id with rgb color
+                (r, g, b) = colorsys.hsv_to_rgb((obs.msg.id.int >> 64) % 360 / 360., 1., 1.) # encode id with rgb color
                 # make a cube 
                 marker = Marker()
                 marker.header = msg.header
