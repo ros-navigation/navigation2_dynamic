@@ -1,6 +1,7 @@
 import numpy as np 
 import cv2
-import uuid 
+import raw_uuid 
+from unique_identifier_msgs.msg import UUID
 
 class ObstacleClass:
     """wrap a kalman filter and extra information for one single obstacle
@@ -17,7 +18,11 @@ class ObstacleClass:
     def __init__(self, obstacle_msg, top_down, measurement_noise_cov, error_cov_post, process_noise_cov):
         '''Initialize with an Obstacle msg and an assigned id'''
         self.msg = obstacle_msg
-        self.msg.uuid = uuid.uuid4()
+
+        uuid_msg = UUID()
+        uuid_msg.uuid = list(uuid.uuid4().bytes)
+        self.msg.uuid = uuid_msg
+        
         position = np.array([[obstacle_msg.position.x, obstacle_msg.position.y, obstacle_msg.position.z]]).T # shape 3*1
         velocity = np.array([[obstacle_msg.velocity.x, obstacle_msg.velocity.y, obstacle_msg.velocity.z]]).T
 

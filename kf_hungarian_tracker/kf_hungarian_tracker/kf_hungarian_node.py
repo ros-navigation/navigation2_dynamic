@@ -165,11 +165,12 @@ class KFHungarianTracker(Node):
             marker_list = []
             # add current active obstacles
             for obs in filtered_obstacle_list:
-                (r, g, b) = colorsys.hsv_to_rgb(obs.msg.uuid.int % 360 / 360., 1., 1.) # encode id with rgb color
+                obstacle_uuid = uuid.UUID(bytes=bytes(obs.msg.uuid.uuid))
+                (r, g, b) = colorsys.hsv_to_rgb(obstacle_uuid.int % 360 / 360., 1., 1.) # encode id with rgb color
                 # make a cube 
                 marker = Marker()
                 marker.header = msg.header
-                marker.ns = str(obs.msg.uuid)
+                marker.ns = str(obstacle_uuid)
                 marker.id = 0
                 marker.type = 1 # CUBE
                 marker.action = 0
@@ -186,7 +187,7 @@ class KFHungarianTracker(Node):
                 # make an arrow
                 arrow = Marker()
                 arrow.header = msg.header
-                arrow.ns = str(obs.msg.uuid)
+                arrow.ns = str(obstacle_uuid)
                 arrow.id = 1 
                 arrow.type = 0
                 arrow.action = 0
@@ -202,15 +203,15 @@ class KFHungarianTracker(Node):
                 arrow.scale.z = 0.05
                 marker_list.append(arrow)
             # add dead obstacles to delete in rviz
-            for idx in dead_object_list:
+            for uuid in dead_object_list:
                 marker = Marker()
                 marker.header = msg.header
-                marker.ns = str(idx)
+                marker.ns = str(uuid)
                 marker.id = 0
                 marker.action = 2 # delete
                 arrow = Marker()
                 arrow.header = msg.header
-                arrow.ns = str(idx)
+                arrow.ns = str(uuid)
                 arrow.id = 1
                 arrow.action = 2
                 marker_list.append(marker)
@@ -239,7 +240,8 @@ class KFHungarianTracker(Node):
             if self.obstacle_list[obs].dying < self.death_threshold:
                 new_object_list.append(self.obstacle_list[obs])
             else:
-                dead_object_list.append(self.obstacle_list[obs].msg.uuid)
+                obstacle_uuid = uuid.UUID(bytes=bytes(self.obstacle_list[obs].msg.uuid.uuid))
+                dead_object_list.append(obstacle_uuid)
         
         # add newly born obstacles
         for obs in range(num_of_obstacle, len(self.obstacle_list)):
