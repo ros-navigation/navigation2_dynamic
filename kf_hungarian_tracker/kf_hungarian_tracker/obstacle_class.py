@@ -1,6 +1,6 @@
 import numpy as np 
 import cv2
-import raw_uuid 
+import uuid 
 from unique_identifier_msgs.msg import UUID
 
 class ObstacleClass:

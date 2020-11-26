@@ -1,4 +1,5 @@
 import numpy as np 
+import uuid
 from scipy.optimize import linear_sum_assignment
 
 from nav2_dynamic_msgs.msg import Obstacle, ObstacleArray
