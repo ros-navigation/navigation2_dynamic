@@ -1,4 +1,5 @@
 import numpy as np 
+import uuid
 from scipy.optimize import linear_sum_assignment
 
 from nav2_dynamic_msgs.msg import Obstacle, ObstacleArray
@@ -23,7 +24,6 @@ class KFHungarianTracker(Node):
 
     Attributes:
         obstacle_list: a list of ObstacleClass that currently present in the scene
-        max_id: the maximum id assigned 
         sec, nanosec: timing from sensor msg
         detection_sub: subscrib detection result from detection node
         tracker_obstacle_pub: publish tracking obstacles with ObstacleArray
@@ -58,7 +58,6 @@ class KFHungarianTracker(Node):
         self.cost_filter = self.get_parameter("cost_filter")._value
 
         self.obstacle_list = []
-        self.max_id = 0
         self.sec = 0
         self.nanosec = 0
 
@@ -167,11 +166,13 @@ class KFHungarianTracker(Node):
             marker_list = []
             # add current active obstacles
             for obs in filtered_obstacle_list:
-                (r, g, b) = colorsys.hsv_to_rgb(obs.msg.id * 30. % 360 / 360., 1., 1.) # encode id with rgb color
+                obstacle_uuid = uuid.UUID(bytes=bytes(obs.msg.uuid.uuid))
+                (r, g, b) = colorsys.hsv_to_rgb(obstacle_uuid.int % 360 / 360., 1., 1.) # encode id with rgb color
                 # make a cube 
                 marker = Marker()
                 marker.header = msg.header
-                marker.id = obs.msg.id
+                marker.ns = str(obstacle_uuid)
+                marker.id = 0
                 marker.type = 1 # CUBE
                 marker.action = 0
                 marker.color.a = 0.5
@@ -187,7 +188,8 @@ class KFHungarianTracker(Node):
                 # make an arrow
                 arrow = Marker()
                 arrow.header = msg.header
-                arrow.id = 255 - obs.msg.id
+                arrow.ns = str(obstacle_uuid)
+                arrow.id = 1 
                 arrow.type = 0
                 arrow.action = 0
                 arrow.color.a = 1.0
@@ -202,18 +204,19 @@ class KFHungarianTracker(Node):
                 arrow.scale.z = 0.05
                 marker_list.append(arrow)
             # add dead obstacles to delete in rviz
-            for idx in dead_object_list:
+            for uuid in dead_object_list:
                 marker = Marker()
                 marker.header = msg.header
-                marker.id = idx
+                marker.ns = str(uuid)
+                marker.id = 0
                 marker.action = 2 # delete
                 arrow = Marker()
                 arrow.header = msg.header
-                arrow.id = 255 - idx
+                arrow.ns = str(uuid)
+                arrow.id = 1
                 arrow.action = 2
                 marker_list.append(marker)
                 marker_list.append(arrow)
-
             marker_array.markers = marker_list
             self.tracker_marker_pub.publish(marker_array)
 
@@ -221,8 +224,8 @@ class KFHungarianTracker(Node):
         '''generate new ObstacleClass for detections that do not match any in current obstacle list'''
         for det in range(num_of_detect):
             if det not in det_ind:
-                self.obstacle_list.append(ObstacleClass(detections[det], self.max_id, self.top_down, self.measurement_noise_cov, self.error_cov_post, self.process_noise_cov))
-                self.max_id =  self.max_id  + 1
+                obstacle = ObstacleClass(detections[det], self.top_down, self.measurement_noise_cov, self.error_cov_post, self.process_noise_cov)
+                self.obstacle_list.append(obstacle)
 
     def death(self, obj_ind, num_of_obstacle):
         '''count obstacles' missing frames and delete when reach threshold'''
@@ -238,7 +241,8 @@ class KFHungarianTracker(Node):
             if self.obstacle_list[obs].dying < self.death_threshold:
                 new_object_list.append(self.obstacle_list[obs])
             else:
-                dead_object_list.append(self.obstacle_list[obs].msg.id)
+                obstacle_uuid = uuid.UUID(bytes=bytes(self.obstacle_list[obs].msg.uuid.uuid))
+                dead_object_list.append(obstacle_uuid)
         
         # add newly born obstacles
         for obs in range(num_of_obstacle, len(self.obstacle_list)):
