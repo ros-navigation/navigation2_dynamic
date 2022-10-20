@@ -97,7 +97,15 @@ class KFHungarianTracker(Node):
             try:
                 trans = self.tf_buffer.lookup_transform(self.global_frame, msg.header.frame_id, rclpy.time.Time())
                 msg.header.frame_id = self.global_frame
+                # do_transform_vector3(vector, trans) resets trans.transform.translation
+                # values to 0.0, so we need to preserve them for future usage in the loop below
+                translation_backup_x = trans.transform.translation.x
+                translation_backup_y = trans.transform.translation.y
+                translation_backup_z = trans.transform.translation.z
                 for i in range(len(detections)):
+                    trans.transform.translation.x = translation_backup_x
+                    trans.transform.translation.y = translation_backup_y
+                    trans.transform.translation.z = translation_backup_z
                     # transform position (point)
                     p = PointStamped()
                     p.point = detections[i].position
