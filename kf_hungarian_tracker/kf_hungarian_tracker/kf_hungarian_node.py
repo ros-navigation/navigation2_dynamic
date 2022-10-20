@@ -69,7 +69,7 @@ class KFHungarianTracker(Node):
 
         # publisher for tracking result
         self.tracker_obstacle_pub = self.create_publisher(ObstacleArray, 'tracking', 10)
-        self.tracker_marker_pub = self.create_publisher(MarkerArray, 'marker', 10)
+        self.tracker_marker_pub = self.create_publisher(MarkerArray, 'traking_marker', 10)
 
         # setup tf related
         self.tf_buffer = Buffer()
