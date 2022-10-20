@@ -10,7 +10,6 @@ from rclpy.node import Node
 import colorsys
 from kf_hungarian_tracker.obstacle_class import ObstacleClass
 
-from tf2_ros import LookupException
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 from tf2_geometry_msgs import do_transform_point, do_transform_vector3
@@ -112,8 +111,10 @@ class KFHungarianTracker(Node):
                     s.vector = detections[i].size
                     detections[i].size = do_transform_vector3(s, trans).vector
 
-            except LookupException:
-                self.get_logger().info('fail to get tf from {} to {}'.format(msg.header.frame_id, self.global_frame))
+            except Exception as ex:
+                self.get_logger().error(
+                    'fail to get tf from {} to {}: {}'.format(
+                    msg.header.frame_id, self.global_frame, ex))
                 return
 
         # hungarian matching
