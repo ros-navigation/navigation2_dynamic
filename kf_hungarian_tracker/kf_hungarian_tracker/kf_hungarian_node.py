@@ -204,15 +204,15 @@ class KFHungarianTracker(Node):
                 arrow.scale.z = 0.05
                 marker_list.append(arrow)
             # add dead obstacles to delete in rviz
-            for uuid in dead_object_list:
+            for dead_uuid in dead_object_list:
                 marker = Marker()
                 marker.header = msg.header
-                marker.ns = str(uuid)
+                marker.ns = str(dead_uuid)
                 marker.id = 0
                 marker.action = 2 # delete
                 arrow = Marker()
                 arrow.header = msg.header
-                arrow.ns = str(uuid)
+                arrow.ns = str(dead_uuid)
                 arrow.id = 1
                 arrow.action = 2
                 marker_list.append(marker)
