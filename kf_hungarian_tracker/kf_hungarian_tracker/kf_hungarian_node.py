@@ -10,7 +10,7 @@ from rclpy.node import Node
 import colorsys
 from kf_hungarian_tracker.obstacle_class import ObstacleClass
 
-from tf2_ros import LookupException
+from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 from tf2_geometry_msgs import do_transform_point, do_transform_vector3
@@ -70,7 +70,7 @@ class KFHungarianTracker(Node):
 
         # publisher for tracking result
         self.tracker_obstacle_pub = self.create_publisher(ObstacleArray, 'tracking', 10)
-        self.tracker_marker_pub = self.create_publisher(MarkerArray, 'marker', 10)
+        self.tracker_marker_pub = self.create_publisher(MarkerArray, 'tracking_marker', 10)
 
         # setup tf related
         self.tf_buffer = Buffer()
@@ -98,7 +98,15 @@ class KFHungarianTracker(Node):
             try:
                 trans = self.tf_buffer.lookup_transform(self.global_frame, msg.header.frame_id, rclpy.time.Time())
                 msg.header.frame_id = self.global_frame
+                # do_transform_vector3(vector, trans) resets trans.transform.translation
+                # values to 0.0, so we need to preserve them for future usage in the loop below
+                translation_backup_x = trans.transform.translation.x
+                translation_backup_y = trans.transform.translation.y
+                translation_backup_z = trans.transform.translation.z
                 for i in range(len(detections)):
+                    trans.transform.translation.x = translation_backup_x
+                    trans.transform.translation.y = translation_backup_y
+                    trans.transform.translation.z = translation_backup_z
                     # transform position (point)
                     p = PointStamped()
                     p.point = detections[i].position
@@ -112,8 +120,10 @@ class KFHungarianTracker(Node):
                     s.vector = detections[i].size
                     detections[i].size = do_transform_vector3(s, trans).vector
 
-            except LookupException:
-                self.get_logger().info('fail to get tf from {} to {}'.format(msg.header.frame_id, self.global_frame))
+            except TransformException as ex:
+                self.get_logger().error(
+                    'fail to get tf from {} to {}: {}'.format(
+                    msg.header.frame_id, self.global_frame, ex))
                 return
 
         # hungarian matching
@@ -204,15 +214,15 @@ class KFHungarianTracker(Node):
                 arrow.scale.z = 0.05
                 marker_list.append(arrow)
             # add dead obstacles to delete in rviz
-            for uuid in dead_object_list:
+            for dead_uuid in dead_object_list:
                 marker = Marker()
                 marker.header = msg.header
-                marker.ns = str(uuid)
+                marker.ns = str(dead_uuid)
                 marker.id = 0
                 marker.action = 2 # delete
                 arrow = Marker()
                 arrow.header = msg.header
-                arrow.ns = str(uuid)
+                arrow.ns = str(dead_uuid)
                 arrow.id = 1
                 arrow.action = 2
                 marker_list.append(marker)
