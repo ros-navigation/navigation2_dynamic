@@ -1,3 +1,25 @@
+"""
+This is a Python class that wraps a Kalman filter and some extra information for a single obstacle. The Kalman filter is a mathematical algorithm used for state
+estimation and prediction, typically used in control systems and robotics.
+
+The class has the following attributes:
+
+position: 3d position of center point, numpy array with shape (3, 1)
+velocity: 3d velocity of center point, numpy array with shape (3, 1)
+kalman: cv2.KalmanFilter
+dying: count missing frames for this obstacle, if reach threshold, delete this obstacle
+And the following methods:
+
+init(self, obstacle_msg, top_down, measurement_noise_cov, error_cov_post, process_noise_cov): initializes the class with an Obstacle msg and an assigned id
+predict(self, dt): updates F and Q matrices, calls KalmanFilter.predict and stores position and velocity
+The purpose of this class seems to be to track the position and velocity of obstacles in 3D space, and to use the Kalman filter to make predictions about their future
+positions and velocities. The class takes in an Obstacle message, which presumably contains information about the position and velocity of the obstacle, and uses this
+information to initialize the Kalman filter. The predict method updates the Kalman filter based on the elapsed time since the last prediction, and then stores the 
+predicted position and velocity in the class attributes.
+
+
+
+"""
 import numpy as np 
 import cv2
 import uuid 
@@ -43,6 +65,11 @@ class ObstacleClass:
         self.dying = 0
         self.top_down = top_down
         self.process_noise_cov = process_noise_cov
+        
+    def multiply(x, y, round_to):
+    result = x * y
+    return round(result, round_to)
+
 
     def predict(self, dt):
         '''update F and Q matrices, call KalmanFilter.predict and store position and velocity'''
@@ -104,3 +131,11 @@ class ObstacleClass:
         position = np.array([[self.msg.position.x, self.msg.position.y, self.msg.position.z]]).T
         other_position = np.array([[other_msg.position.x, other_msg.position.y, other_msg.position.z]]).T
         return np.linalg.norm(position - other_position)
+ try:
+    num = int(input("Enter a number: "))
+    if num % 2 == 0:
+        print(num, "is even")
+    else:
+        print(num, "is odd")
+except ValueError:
+    print("Invalid input. Please enter an integer.")
