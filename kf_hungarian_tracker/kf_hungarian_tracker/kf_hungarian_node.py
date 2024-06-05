@@ -103,43 +103,41 @@ class KFHungarianTracker(Node):
         for obj in self.obstacle_list:
             obj.predict(dt)
 
-        if self.transform_to_global_frame:
-            # transform to global frame
-            if self.global_frame is not None:
-                try:
-                    trans = self.tf_buffer.lookup_transform(
-                        self.global_frame, msg.header.frame_id, rclpy.time.Time()
-                    )
-                    msg.header.frame_id = self.global_frame
-                    # do_transform_vector3(vector, trans) resets trans.transform.translation
-                    # values to 0.0, so we need to preserve them for future usage in the loop below
-                    translation_backup_x = trans.transform.translation.x
-                    translation_backup_y = trans.transform.translation.y
-                    translation_backup_z = trans.transform.translation.z
-                    for i in range(len(detections)):
-                        trans.transform.translation.x = translation_backup_x
-                        trans.transform.translation.y = translation_backup_y
-                        trans.transform.translation.z = translation_backup_z
-                        # transform position (point)
-                        p = PointStamped()
-                        p.point = detections[i].position
-                        detections[i].position = do_transform_point(p, trans).point
-                        # transform velocity (vector3)
-                        v = Vector3Stamped()
-                        v.vector = detections[i].velocity
-                        detections[i].velocity = do_transform_vector3(v, trans).vector
-                        # transform size (vector3)
-                        s = Vector3Stamped()
-                        s.vector = detections[i].size
-                        detections[i].size = do_transform_vector3(s, trans).vector
+        if (self.transform_to_global_frame) and (self.global_frame is not None):
+            try:
+                trans = self.tf_buffer.lookup_transform(
+                    self.global_frame, msg.header.frame_id, rclpy.time.Time()
+                )
+                msg.header.frame_id = self.global_frame
+                # do_transform_vector3(vector, trans) resets trans.transform.translation
+                # values to 0.0, so we need to preserve them for future usage in the loop below
+                translation_backup_x = trans.transform.translation.x
+                translation_backup_y = trans.transform.translation.y
+                translation_backup_z = trans.transform.translation.z
+                for i in range(len(detections)):
+                    trans.transform.translation.x = translation_backup_x
+                    trans.transform.translation.y = translation_backup_y
+                    trans.transform.translation.z = translation_backup_z
+                    # transform position (point)
+                    p = PointStamped()
+                    p.point = detections[i].position
+                    detections[i].position = do_transform_point(p, trans).point
+                    # transform velocity (vector3)
+                    v = Vector3Stamped()
+                    v.vector = detections[i].velocity
+                    detections[i].velocity = do_transform_vector3(v, trans).vector
+                    # transform size (vector3)
+                    s = Vector3Stamped()
+                    s.vector = detections[i].size
+                    detections[i].size = do_transform_vector3(s, trans).vector
 
-                except TransformException as ex:
-                    self.get_logger().error(
-                        "fail to get tf from {} to {}: {}".format(
-                            msg.header.frame_id, self.global_frame, ex
-                        )
+            except TransformException as ex:
+                self.get_logger().error(
+                    "fail to get tf from {} to {}: {}".format(
+                        msg.header.frame_id, self.global_frame, ex
                     )
-                    return
+                )
+                return
 
         # hungarian matching
         cost = np.zeros((num_of_obstacle, num_of_detect))
