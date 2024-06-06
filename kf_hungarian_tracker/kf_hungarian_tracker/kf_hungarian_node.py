@@ -50,6 +50,7 @@ class KFHungarianTracker(Node):
                 ("height_filter", [-2.0, 2.0]),
                 ("cost_filter", 1.0),
                 ("transform_to_global_frame", False),
+                ("infer_orientation_from_velocity", False),
             ],
         )
         self.global_frame = self.get_parameter("global_frame")._value
@@ -63,6 +64,9 @@ class KFHungarianTracker(Node):
         self.cost_filter = self.get_parameter("cost_filter")._value
         self.transform_to_global_frame = self.get_parameter(
             "transform_to_global_frame"
+        )._value
+        self.infer_orientation_from_velocity = self.get_parameter(
+            "infer_orientation_from_velocity"
         )._value
 
         self.obstacle_list = []
@@ -215,8 +219,13 @@ class KFHungarianTracker(Node):
                 marker.color.b = b
                 marker.pose.position = obs.msg.position
                 angle = np.arctan2(obs.msg.velocity.y, obs.msg.velocity.x)
-                marker.pose.orientation.z = 0.0  # float(np.sin(angle / 2))
-                marker.pose.orientation.w = 1.0  # float(np.cos(angle / 2))
+                if self.infer_orientation_from_velocity:
+                    marker.pose.orientation.z = float(np.sin(angle / 2))
+                    marker.pose.orientation.w = float(np.cos(angle / 2))
+                else:
+                    marker.pose.orientation.z = 0.0
+                    marker.pose.orientation.w = 1.0
+
                 marker.scale = obs.msg.size
                 marker_list.append(marker)
                 # make an arrow
