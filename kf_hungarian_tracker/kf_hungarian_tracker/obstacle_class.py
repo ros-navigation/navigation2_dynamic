@@ -103,58 +103,13 @@ class ObstacleClass:
         dt2 = dt**2
         dt3 = dt * dt2
         dt4 = dt2**2
-        Q = np.array(
-            [
-                [
-                    dt4 * self.process_noise_cov[0] / 4,
-                    0,
-                    0,
-                    dt3 * self.process_noise_cov[0] / 2,
-                    0,
-                    0,
-                ],
-                [
-                    0,
-                    dt4 * self.process_noise_cov[1] / 4,
-                    0,
-                    0,
-                    dt3 * self.process_noise_cov[1] / 2,
-                    0,
-                ],
-                [
-                    0,
-                    0,
-                    dt4 * self.process_noise_cov[2] / 4,
-                    0,
-                    0,
-                    dt3 * self.process_noise_cov[2] / 2,
-                ],
-                [
-                    dt3 * self.process_noise_cov[0] / 2,
-                    0,
-                    0,
-                    dt2 * self.process_noise_cov[0],
-                    0,
-                    0,
-                ],
-                [
-                    0,
-                    dt3 * self.process_noise_cov[1] / 2,
-                    0,
-                    0,
-                    dt2 * self.process_noise_cov[1],
-                    0,
-                ],
-                [
-                    0,
-                    0,
-                    dt3 * self.process_noise_cov[2] / 2,
-                    0,
-                    0,
-                    dt2 * self.process_noise_cov[2],
-                ],
-            ]
-        ).astype(np.float32)
+
+        Q = np.array([[dt4*self.process_noise_cov[0]/4, 0, 0, dt3*self.process_noise_cov[0]/2, 0, 0],
+                      [0, dt4*self.process_noise_cov[1]/4, 0, 0, dt3*self.process_noise_cov[1]/2, 0],
+                      [0, 0, dt4*self.process_noise_cov[2]/4, 0, 0, dt3*self.process_noise_cov[2]/2],
+                      [dt3*self.process_noise_cov[0]/2, 0, 0, dt2*self.process_noise_cov[0], 0, 0],
+                      [0, dt3*self.process_noise_cov[1]/2, 0, 0, dt2*self.process_noise_cov[1], 0],
+                      [0, 0, dt3*self.process_noise_cov[2]/2, 0, 0, dt2*self.process_noise_cov[2]]]).astype(np.float32)
 
         self.kalman.transitionMatrix = F
         self.kalman.processNoiseCov = Q

@@ -49,8 +49,8 @@ class KFHungarianTracker(Node):
                 ("vel_filter", [0.1, 2.0]),
                 ("height_filter", [-2.0, 2.0]),
                 ("cost_filter", 1.0),
-                ("transform_to_global_frame", False),
-                ("infer_orientation_from_velocity", False),
+                ("transform_to_global_frame", True),
+                ("infer_orientation_from_velocity", True),
             ],
         )
         self.global_frame = self.get_parameter("global_frame")._value
