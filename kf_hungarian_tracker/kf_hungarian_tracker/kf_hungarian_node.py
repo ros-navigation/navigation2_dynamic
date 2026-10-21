@@ -1,7 +1,7 @@
 import numpy as np
 import uuid
-import math
 from scipy.optimize import linear_sum_assignment
+from scipy.spatial.transform import Rotation
 
 from nav2_dynamic_msgs.msg import Obstacle, ObstacleArray
 from visualization_msgs.msg import Marker, MarkerArray
@@ -16,7 +16,14 @@ from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 from tf2_geometry_msgs import do_transform_point, do_transform_vector3
-from geometry_msgs.msg import PointStamped, Vector3Stamped
+from geometry_msgs.msg import PointStamped, Quaternion, Vector3Stamped
+
+
+def compose(a, b):
+    """Quaternion product a * b: rotation b, then rotation a."""
+    q = (Rotation.from_quat([a.x, a.y, a.z, a.w])
+         * Rotation.from_quat([b.x, b.y, b.z, b.w])).as_quat()
+    return Quaternion(x=q[0], y=q[1], z=q[2], w=q[3])
 
 
 class KFHungarianTracker(Node):
@@ -130,10 +137,11 @@ class KFHungarianTracker(Node):
                     v = Vector3Stamped()
                     v.vector = detections[i].velocity
                     detections[i].velocity = do_transform_vector3(v, trans).vector
-                    # transform size (vector3)
-                    s = Vector3Stamped()
-                    s.vector = detections[i].size
-                    detections[i].size = do_transform_vector3(s, trans).vector
+                    # size is measured along the box's own axes, so it does not
+                    # change between frames; the box's orientation does
+                    detections[i].orientation = compose(
+                        trans.transform.rotation, detections[i].orientation
+                    )
 
             except TransformException as ex:
                 self.get_logger().error(
@@ -223,8 +231,7 @@ class KFHungarianTracker(Node):
                     marker.pose.orientation.z = float(np.sin(angle / 2))
                     marker.pose.orientation.w = float(np.cos(angle / 2))
                 else:
-                    marker.pose.orientation.z = 0.0
-                    marker.pose.orientation.w = 1.0
+                    marker.pose.orientation = obs.msg.orientation
 
                 marker.scale = obs.msg.size
                 marker_list.append(marker)
