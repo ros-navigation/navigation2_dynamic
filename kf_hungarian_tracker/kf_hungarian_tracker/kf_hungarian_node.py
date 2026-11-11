@@ -116,9 +116,20 @@ class KFHungarianTracker(Node):
 
         if (self.transform_to_global_frame) and (self.global_frame is not None):
             try:
-                trans = self.tf_buffer.lookup_transform(
-                    self.global_frame, msg.header.frame_id, rclpy.time.Time()
-                )
+                # Use the transform at the time the detections were sensed. With the latest
+                # transform, a detector delay shifts every detection by the robot motion during
+                # that delay (rotation in particular), so static objects appear to move.
+                try:
+                    trans = self.tf_buffer.lookup_transform(
+                        self.global_frame,
+                        msg.header.frame_id,
+                        rclpy.time.Time.from_msg(msg.header.stamp),
+                    )
+                except TransformException:
+                    # stamp not (yet) covered by the buffer: fall back to the latest transform
+                    trans = self.tf_buffer.lookup_transform(
+                        self.global_frame, msg.header.frame_id, rclpy.time.Time()
+                    )
                 msg.header.frame_id = self.global_frame
                 # do_transform_vector3(vector, trans) resets trans.transform.translation
                 # values to 0.0, so we need to preserve them for future usage in the loop below
