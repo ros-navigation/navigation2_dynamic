@@ -58,6 +58,7 @@ class KFHungarianTracker(Node):
                 ("cost_filter", 1.0),
                 ("transform_to_global_frame", True),
                 ("infer_orientation_from_velocity", True),
+                ("confirmation_frames", 1),
             ],
         )
         self.global_frame = self.get_parameter("global_frame")._value
@@ -75,6 +76,8 @@ class KFHungarianTracker(Node):
         self.infer_orientation_from_velocity = self.get_parameter(
             "infer_orientation_from_velocity"
         )._value
+
+        self.confirmation_frames = self.get_parameter("confirmation_frames")._value
 
         self.obstacle_list = []
         self.sec = 0
@@ -189,6 +192,13 @@ class KFHungarianTracker(Node):
                 and obs_height > self.height_filter[0]
                 and obs_height < self.height_filter[1]
             ):
+                obs.frames_in_filter += 1
+            else:
+                obs.frames_in_filter = 0
+            # A single noisy velocity estimate above vel_filter[0] (typical for a track
+            # that was just born, or for a static object) must not publish the obstacle:
+            # it has to stay inside the filters for confirmation_frames frames in a row.
+            if obs.frames_in_filter >= max(self.confirmation_frames, 1):
                 filtered_obstacle_list.append(obs)
 
         # construct ObstacleArray
