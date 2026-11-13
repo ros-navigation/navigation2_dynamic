@@ -26,4 +26,5 @@ Parameters can be set in `config/kf_hungarian.yaml`. For more information on par
 | vel_filter | minimum and maximum velocity to filter obstacles [min,max] (m/s) | [0.1, 2.0] |
 | height_filter | minimum and maximum height (z) to filter obstacles [min,max] (m) | [-2.0, 2.0] | 
 | cost_filter | filter Hungarian assignments with cost greater than threshold (unit is `m` for Euclidean cost function) | 1.0 |
+| confirmation_frames | frames an obstacle must be detected inside `vel_filter` and `height_filter` before it is published. A frame outside the filters resets the count; a frame on which the obstacle is not detected does not count. `1` publishes on the first frame (previous behaviour); a larger value suppresses static objects whose noisy velocity estimate briefly exceeds `vel_filter[0]`, and spurious detections that last fewer frames | 1 |
 * The default units are `m` and `m/s`, could be changed according to the detection.

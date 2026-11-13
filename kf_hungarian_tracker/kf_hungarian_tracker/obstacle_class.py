@@ -71,6 +71,7 @@ class ObstacleClass:
         self.kalman.errorCovPost = np.diag(error_cov_post).astype(np.float32)
 
         self.dying = 0
+        self.frames_in_filter = 0
         self.top_down = top_down
         self.process_noise_cov = process_noise_cov
 
