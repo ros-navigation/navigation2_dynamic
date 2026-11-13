@@ -8,6 +8,7 @@ from visualization_msgs.msg import Marker, MarkerArray
 
 import rclpy
 import copy
+from rclpy.duration import Duration
 from rclpy.node import Node
 import colorsys
 from kf_hungarian_tracker.obstacle_class import ObstacleClass
@@ -57,6 +58,7 @@ class KFHungarianTracker(Node):
                 ("height_filter", [-2.0, 2.0]),
                 ("cost_filter", 1.0),
                 ("transform_to_global_frame", True),
+                ("transform_tolerance", 0.2),
                 ("infer_orientation_from_velocity", True),
             ],
         )
@@ -72,6 +74,9 @@ class KFHungarianTracker(Node):
         self.transform_to_global_frame = self.get_parameter(
             "transform_to_global_frame"
         )._value
+        self.transform_tolerance = Duration(
+            seconds=self.get_parameter("transform_tolerance")._value
+        )
         self.infer_orientation_from_velocity = self.get_parameter(
             "infer_orientation_from_velocity"
         )._value
@@ -93,7 +98,12 @@ class KFHungarianTracker(Node):
 
         # setup tf related
         self.tf_buffer = Buffer()
-        self.tf_listener = TransformListener(self.tf_buffer, self)
+        # own node and thread, so transforms keep arriving while callback() waits for one
+        self.tf_listener = TransformListener(
+            self.tf_buffer,
+            rclpy.create_node(self.get_name() + "_tf_listener", namespace=self.get_namespace()),
+            spin_thread=True,
+        )
 
     def callback(self, msg):
         """callback function for detection result"""
@@ -116,20 +126,12 @@ class KFHungarianTracker(Node):
 
         if (self.transform_to_global_frame) and (self.global_frame is not None):
             try:
-                # Use the transform at the time the detections were sensed. With the latest
-                # transform, a detector delay shifts every detection by the robot motion during
-                # that delay (rotation in particular), so static objects appear to move.
-                try:
-                    trans = self.tf_buffer.lookup_transform(
-                        self.global_frame,
-                        msg.header.frame_id,
-                        rclpy.time.Time.from_msg(msg.header.stamp),
-                    )
-                except TransformException:
-                    # stamp not (yet) covered by the buffer: fall back to the latest transform
-                    trans = self.tf_buffer.lookup_transform(
-                        self.global_frame, msg.header.frame_id, rclpy.time.Time()
-                    )
+                trans = self.tf_buffer.lookup_transform(
+                    self.global_frame,
+                    msg.header.frame_id,
+                    rclpy.time.Time.from_msg(msg.header.stamp),
+                    self.transform_tolerance,
+                )
                 msg.header.frame_id = self.global_frame
                 # do_transform_vector3(vector, trans) resets trans.transform.translation
                 # values to 0.0, so we need to preserve them for future usage in the loop below

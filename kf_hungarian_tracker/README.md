@@ -17,6 +17,7 @@ Parameters can be set in `config/kf_hungarian.yaml`. For more information on par
 | parameters       | Meaning        | Default |
 | ---------------- | ------------- | ------- |
 | global_frame     | transform from pointcloud frame to global frame,<br>None means message frame is global  | camera_link   |
+| transform_tolerance | time to wait for the transform at the detection stamp (s) | 0.2 |
 | death_threshold  | maximum missing frames before deleting an obstacle  | 3 |
 | top_down | whether project 3D points on ground plane, set to do top-down tracking | False |
 | measurement_noise_cov | measurement noise for Kalman filter [x,y,z] | [1., 1., 1.] |
