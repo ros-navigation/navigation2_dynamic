@@ -12,4 +12,4 @@ kf_hungarian_node:
     height_filter: [-2.0, 2.0] # minimum and maximum height (z) to filter obstacles
     cost_filter: 1.0 # filter Hungarian assignment with cost greater than threshold
     
-    confirmation_frames: 1 # consecutive frames an obstacle must pass the filters above before it is published
+    confirmation_frames: 1 # frames an obstacle must be detected inside the filters above before it is published

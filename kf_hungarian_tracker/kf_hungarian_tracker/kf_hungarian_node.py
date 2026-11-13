@@ -192,12 +192,11 @@ class KFHungarianTracker(Node):
                 and obs_height > self.height_filter[0]
                 and obs_height < self.height_filter[1]
             ):
-                obs.frames_in_filter += 1
+                # frames on which the obstacle was not detected do not count
+                if obs.dying == 0:
+                    obs.frames_in_filter += 1
             else:
                 obs.frames_in_filter = 0
-            # A single noisy velocity estimate above vel_filter[0] (typical for a track
-            # that was just born, or for a static object) must not publish the obstacle:
-            # it has to stay inside the filters for confirmation_frames frames in a row.
             if obs.frames_in_filter >= max(self.confirmation_frames, 1):
                 filtered_obstacle_list.append(obs)
 

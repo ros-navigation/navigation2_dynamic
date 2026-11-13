@@ -102,3 +102,54 @@ def test_one_noisy_frame_on_a_static_object(tracker, confirmation_frames, expect
         f'confirmation_frames = {confirmation_frames}: a static object with one noisy '
         f'frame was published in {published} frames'
     )
+
+
+def _feed_empty(node, frame):
+    """Feed one frame with no detections and return how many were published."""
+    msg = ObstacleArray()
+    msg.header.frame_id = 'odom'
+    t = 1.0 + frame * DT
+    msg.header.stamp.sec = int(t)
+    msg.header.stamp.nanosec = int(round((t - int(t)) * 1e9))
+    node.callback(msg)
+    return len(node.published[-1].obstacles)
+
+
+def test_a_single_detection_is_not_published_while_the_track_coasts(tracker):
+    """An obstacle seen once must not be confirmed by frames it was not seen on.
+
+    The track outlives its only detection until death_threshold, and predict()
+    keeps a velocity on it, so it keeps passing the filters.
+    """
+    tracker.confirmation_frames = 3
+    # no velocity gating, so only the confirmation counter decides
+    tracker.vel_filter = [-1.0, 10.0]
+    published = _feed(tracker, 0, 0.0)
+    published += sum(_feed_empty(tracker, frame) for frame in range(1, 20))
+    assert published == 0, (
+        f'confirmation_frames = 3: an obstacle detected on a single frame was '
+        f'published in {published} frames '
+    )
+
+
+def test_a_missed_frame_pauses_the_count(tracker):
+    """Detected, detected, missed, detected: published on the third detection."""
+    tracker.confirmation_frames = 3
+    tracker.vel_filter = [-1.0, 10.0]
+    published = [
+        _feed(tracker, 0, 0.0),
+        _feed(tracker, 1, 0.0),
+        _feed_empty(tracker, 2),
+        _feed(tracker, 3, 0.0),
+    ]
+    assert published == [0, 0, 0, 1]
+
+
+def test_a_confirmed_obstacle_stays_published_when_missed_once(tracker):
+    """A missed frame does not unpublish an obstacle that is already confirmed."""
+    tracker.confirmation_frames = 3
+    tracker.vel_filter = [-1.0, 10.0]
+    published = [_feed(tracker, frame, 0.0) for frame in range(5)]
+    published.append(_feed_empty(tracker, 5))
+    published.append(_feed(tracker, 6, 0.0))
+    assert published == [0, 0, 1, 1, 1, 1, 1]
