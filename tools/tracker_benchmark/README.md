@@ -96,7 +96,7 @@ The tracker transforms the detections with the latest transform, not the one at 
 
 ## Real detector (optional)
 
-`aghri_detect.py` runs the PointPillars checkpoint fine-tuned on AGHRI that the benchmark repository ships (stored with Git LFS: `git lfs pull --include late_fusion/deepfusionmot/checkpoints/aghri_pointpillars_finetune`), with the model config stored in the checkpoint. It writes one JSON per scan in the AGHRI export format, `<out>/<sequence>/<pcd stem>.json`. It needs the lidar scans and an mmdetection3d environment instead of the ROS one (tested with Python 3.10, torch 2.1.2, mmcv 2.1.0, mmdet 3.3.0, mmdet3d 1.4.0, mmengine 0.10.7); on a CPU it takes about 0.06 s per scan.
+`aghri_detect.py` runs the PointPillars checkpoint fine-tuned on AGHRI that the AGHRI benchmark repository ships. That repository stores the checkpoint with Git LFS, so fetch it there with `git lfs pull --include late_fusion/deepfusionmot/checkpoints/aghri_pointpillars_finetune`; this package itself has no LFS files. The model config is read from the checkpoint. It writes one JSON per scan in the AGHRI export format, `<out>/<sequence>/<pcd stem>.json`. It needs the lidar scans and an mmdetection3d environment instead of the ROS one (tested with Python 3.10, torch 2.1.2, mmcv 2.1.0, mmdet 3.3.0, mmdet3d 1.4.0, mmengine 0.10.7); on a CPU it takes about 0.06 s per scan.
 
 ```bash
 ~/mmdet3d_venv/bin/python src/navigation2_dynamic/tools/tracker_benchmark/aghri_detect.py \
